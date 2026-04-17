@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car DVD Solution | Premium Automotive Tech</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF6B00', 
+                        dark: '#111111',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #050505; 
+            color: #fff; 
+            scroll-behavior: smooth; 
+            overflow-x: hidden;
+        }
+
+        /* 3D Car Background Container */
+        .hero-3d-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+        }
+
+        /* 3D Model Image Overlay */
+        .car-3d-model {
+            position: absolute;
+            bottom: 10%;
+            right: -10%;
+            width: 80%;
+            max-width: 900px;
+            filter: drop-shadow(0 20px 50px rgba(255, 107, 0, 0.3));
+            animation: carFloat 6s ease-in-out infinite;
+            opacity: 0.6;
+        }
+
+        /* Background Light Beam */
+        .light-beam {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(255,107,0,0.15) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            top: -10%;
+            left: -10%;
+        }
+
+        @keyframes carFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(-1deg); }
+        }
+
+        .orbitron { font-family: 'Orbitron', sans-serif; }
+        
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(15px); 
+            border: 1px solid rgba(255,255,255,0.08); 
+            border-radius: 24px; 
+            transition: 0.4s;
+        }
+        .glass-card:hover { border-color: #FF6B00; background: rgba(255, 255, 255, 0.08); }
+
+        .input-style { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 12px 18px; width: 100%; color: #fff; outline: none; transition: 0.3s; }
+        .input-style:focus { border-color: #FF6B00; background: rgba(255,255,255,0.1); }
+        
+        .logo-main-title { font-family: 'Orbitron', sans-serif; font-size: 20px; font-weight: 800; color: #fff; cursor: pointer; }
+        .logo-main-title span { color: #FF6B00; }
+        
+        .social-icon { width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: rgba(255,255,255,0.05); backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; color: white; }
+        .social-float { position: fixed; bottom: 30px; right: 20px; display: flex; flex-direction: column; gap: 12px; z-index: 500; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #FF6B00; border-radius: 10px; }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, remove, push, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+        const ADMIN_EMAIL = "cardvdsolution@gmail.com";
+
+        window.dbProducts = [];
+
+        // --- Auth Functions ---
+        window.toggleAuthMode = () => {
+            document.getElementById('login-box').classList.toggle('hidden');
+            document.getElementById('register-box').classList.toggle('hidden');
+        };
+
+        window.handleRegister = async () => {
+            const email = document.getElementById('reg-email').value;
+            const pass = document.getElementById('reg-pass').value;
+            try {
+                await createUserWithEmailAndPassword(auth, email, pass);
+                alert("Account Created!");
+                closeAdminModal();
+            } catch (error) { alert(error.message); }
+        };
+
+        window.handleEmailLogin = async () => {
+            const email = document.getElementById('login-email').value;
+            const pass = document.getElementById('login-pass').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                closeAdminModal();
+            } catch (error) { alert(error.message); }
+        };
+
+        window.handleGoogleLogin = async () => {
+            try { await signInWithPopup(auth, provider); closeAdminModal(); } 
+            catch (error) { alert(error.message); }
+        };
+
+        window.logoutAdmin = () => { signOut(auth).then(() => location.reload()); };
+
+        onAuthStateChanged(auth, (user) => {
+            const loginBtn = document.getElementById('nav-login-btn');
+            const loginSec = document.getElementById('admin-login-sec');
+            const dashboard = document.getElementById('admin-dashboard');
+
+            if (user) {
+                loginBtn.innerHTML = `<i class="fas fa-user-circle mr-2"></i> ${user.email.split('@')[0].toUpperCase()}`;
+                if (user.email === ADMIN_EMAIL) {
+                    loginSec?.classList.add('hidden');
+                    dashboard?.classList.remove('hidden');
+                    updateAdminList();
+                } else {
+                    loginSec.innerHTML = `<div class='text-center'><h3 class='orbitron font-bold'>Hello, Customer</h3><p class='text-xs text-gray-400 mt-2'>${user.email}</p><button onclick="logoutAdmin()" class='mt-6 bg-primary text-white px-8 py-2 rounded-xl text-xs font-bold'>LOGOUT</button></div>`;
+                }
+            } else {
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i> LOGIN';
+                loginSec?.classList.remove('hidden');
+                dashboard?.classList.add('hidden');
+            }
+        });
+
+        // --- Product Control ---
+        onValue(ref(db, 'products'), (snap) => {
+            const data = snap.val();
+            window.dbProducts = data ? Object.entries(data).map(([key, val]) => ({...val, id: key})) : [];
+            renderProducts();
+            if(auth.currentUser?.email === ADMIN_EMAIL) updateAdminList();
+        });
+
+        window.addProduct = async () => {
+            const name = document.getElementById('p-name').value;
+            const price = document.getElementById('p-price').value;
+            const img = document.getElementById('p-img').value;
+            if(!name || !price || !img) return alert("Fill all fields");
+            await push(ref(db, 'products'), { name, price: Number(price), img });
+            document.getElementById('add-form').reset();
+        };
+
+        window.deleteProduct = (id) => { if(confirm("Delete product?")) remove(ref(db, `products/${id}`)); };
+
+        window.renderProducts = (filtered = null) => {
+            const grid = document.getElementById('products-grid');
+            const items = filtered || window.dbProducts;
+            grid.innerHTML = items.map(p => `
+                <div class="glass-card p-4 group" data-aos="fade-up">
+                    <div class="relative overflow-hidden rounded-xl mb-4 aspect-square bg-white/5">
+                        <img src="${p.img}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500">
+                    </div>
+                    <h3 class="text-[10px] font-bold uppercase text-gray-400 mb-1 truncate">${p.name}</h3>
+                    <div class="flex justify-between items-center">
+                        <span class="text-lg font-black text-primary orbitron">৳${p.price.toLocaleString()}</span>
+                        <button class="bg-primary/10 text-primary w-9 h-9 rounded-xl hover:bg-primary hover:text-white transition-all flex items-center justify-center border border-primary/20 shadow-lg shadow-primary/10">
+                            <i class="fas fa-cart-plus text-xs"></i>
+                        </button>
+                    </div>
+                </div>`).join('');
+        };
+
+        window.handleSearch = (val) => {
+            const filtered = window.dbProducts.filter(p => p.name.toLowerCase().includes(val.toLowerCase()));
+            renderProducts(filtered);
+        };
+
+        function updateAdminList() {
+            const list = document.getElementById('admin-product-list');
+            list.innerHTML = window.dbProducts.map(p => `
+                <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl mb-2 border border-white/5">
+                    <div class="flex items-center gap-3">
+                        <img src="${p.img}" class="w-10 h-10 rounded-lg object-cover">
+                        <p class="text-[10px] font-bold uppercase">${p.name}</p>
+                    </div>
+                    <button onclick="deleteProduct('${p.id}')" class="text-red-500 hover:text-red-400 px-2"><i class="fas fa-trash"></i></button>
+                </div>`).join('');
+        }
+
+        window.openAdminModal = () => document.getElementById('admin-modal').classList.remove('hidden');
+        window.closeAdminModal = () => document.getElementById('admin-modal').classList.add('hidden');
+    </script>
+</head>
+<body class="custom-scroll">
+
+    <div class="hero-3d-container">
+        <div class="light-beam"></div>
+        <img src="https://purepng.com/public/uploads/large/purepng.com-orange-lamborghini-huracan-carcarvehicletransportlamborghini-961524661725lt8j1.png" class="car-3d-model" alt="3D Car">
+    </div>
+
+    <nav class="bg-black/40 backdrop-blur-md p-4 border-b border-white/5 flex flex-wrap justify-between items-center sticky top-0 z-[100]">
+        <div class="logo-container">
+            <h1 class="logo-main-title uppercase tracking-tighter" onclick="location.reload()">CAR DVD <span>SOLUTION</span></h1>
+        </div>
+
+        <div class="order-3 md:order-2 w-full md:w-auto mt-4 md:mt-0">
+            <div class="relative">
+                <input type="text" oninput="handleSearch(this.value)" placeholder="Search products..." class="bg-white/5 border border-white/10 rounded-full py-2 px-10 text-xs w-full md:w-80 outline-none focus:border-primary transition-all">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-[10px]"></i>
+            </div>
+        </div>
+
+        <div class="flex gap-3 items-center order-2 md:order-3">
+            <button id="nav-login-btn" onclick="openAdminModal()" class="px-5 py-2.5 bg-white/5 text-white text-[10px] font-bold rounded-xl border border-white/10 hover:bg-primary transition-all orbitron flex items-center">
+                <i class="fas fa-sign-in-alt mr-2"></i> LOGIN
+            </button>
+        </div>
+    </nav>
+
+    <main class="relative z-10 p-6 max-w-7xl mx-auto py-12">
+        <div class="mb-10 flex items-center gap-4">
+            <h2 class="orbitron text-xl font-bold uppercase tracking-widest border-l-4 border-primary pl-4">Premium Inventory</h2>
+        </div>
+        <div id="products-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8"></div>
+    </main>
+
+    <div id="admin-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[500] hidden p-6 flex items-center justify-center">
+        <div class="bg-[#111] max-w-4xl w-full rounded-[30px] border border-white/10 shadow-2xl relative overflow-hidden">
+            <button onclick="closeAdminModal()" class="absolute top-6 right-6 text-gray-500 hover:text-white transition-all">✕</button>
+            
+            <div id="admin-login-sec" class="p-12 max-w-md mx-auto">
+                <div id="login-box" class="space-y-5">
+                    <h3 class="orbitron text-2xl font-black text-center text-white">WELCOME BACK</h3>
+                    <input type="email" id="login-email" placeholder="Email Address" class="input-style">
+                    <input type="password" id="login-pass" placeholder="Password" class="input-style">
+                    <button onclick="handleEmailLogin()" class="w-full bg-primary text-white py-4 rounded-xl font-black tracking-widest hover:brightness-110 transition-all">LOG IN</button>
+                    <div class="flex items-center gap-4 my-6"><div class="h-[1px] bg-white/10 flex-grow"></div><span class="text-[10px] text-gray-500">OR</span><div class="h-[1px] bg-white/10 flex-grow"></div></div>
+                    <button onclick="handleGoogleLogin()" class="w-full border border-white/10 py-3 rounded-xl flex items-center justify-center gap-3 text-xs font-bold hover:bg-white hover:text-black transition-all">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-5"> Login with Google
+                    </button>
+                    <p class="text-center text-[10px] text-gray-500">New here? <span onclick="toggleAuthMode()" class="text-primary cursor-pointer font-bold">Create an account</span></p>
+                </div>
+
+                <div id="register-box" class="hidden space-y-5">
+                    <h3 class="orbitron text-2xl font-black text-center text-white">SIGN UP</h3>
+                    <input type="email" id="reg-email" placeholder="Email Address" class="input-style">
+                    <input type="password" id="reg-pass" placeholder="Create Password" class="input-style">
+                    <button onclick="handleRegister()" class="w-full bg-white text-black py-4 rounded-xl font-black tracking-widest hover:bg-primary hover:text-white transition-all">REGISTER NOW</button>
+                    <p class="text-center text-[10px] text-gray-500">Already have account? <span onclick="toggleAuthMode()" class="text-primary cursor-pointer font-bold">Log in</span></p>
+                </div>
+            </div>
+
+            <div id="admin-dashboard" class="hidden p-8 flex flex-col md:flex-row gap-8 max-h-[85vh] overflow-y-auto custom-scroll">
+                <div class="md:w-1/3 space-y-6">
+                    <h3 class="orbitron text-lg font-bold text-primary">UPLOAD PRODUCT</h3>
+                    <form id="add-form" class="space-y-4">
+                        <input type="text" id="p-name" placeholder="Product Name" class="input-style text-sm">
+                        <input type="number" id="p-price" placeholder="Price (৳)" class="input-style text-sm">
+                        <input type="text" id="p-img" placeholder="Image URL" class="input-style text-sm">
+                        <button type="button" onclick="addProduct()" class="w-full bg-primary text-white py-4 rounded-xl font-bold text-xs uppercase tracking-widest">Add to Inventory</button>
+                    </form>
+                </div>
+                <div class="md:w-2/3 border-l border-white/10 pl-0 md:pl-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="orbitron text-lg font-bold">INVENTORY</h3>
+                        <button onclick="logoutAdmin()" class="text-[10px] bg-red-600/10 text-red-500 px-4 py-1.5 rounded-lg border border-red-500/20 font-bold uppercase">Logout</button>
+                    </div>
+                    <div id="admin-product-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="social-float">
+        <a href="mailto:cardvdsolution@gmail.com" class="social-icon hover:bg-red-600"><i class="fas fa-envelope"></i></a>
+        <a href="https://www.youtube.com/@cardvdsolution2888" target="_blank" class="social-icon hover:bg-red-700"><i class="fab fa-youtube"></i></a>
+        <a href="https://wa.me/8801781787530" target="_blank" class="social-icon hover:bg-green-500"><i class="fab fa-whatsapp"></i></a>
+        <a href="https://www.facebook.com/cardvdsolution" target="_blank" class="social-icon hover:bg-blue-600"><i class="fab fa-facebook-f"></i></a>
+    </div>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>AOS.init({ duration: 800 });</script>
+</body>
+</html>
